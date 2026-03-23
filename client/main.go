@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/op/go-logging"
@@ -90,14 +92,23 @@ func PrintConfig(v *viper.Viper) {
 	)
 }
 
+func handleSignal() chan os.Signal {
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, syscall.SIGTERM)
+
+	return signalChannel
+}
+
 func main() {
 	v, err := InitConfig()
 	if err != nil {
 		log.Criticalf("%s", err)
+		os.Exit(1)
 	}
 
 	if err := InitLogger(v.GetString("log.level")); err != nil {
 		log.Criticalf("%s", err)
+		os.Exit(1)
 	}
 
 	// Print program config with debugging purposes
@@ -110,6 +121,7 @@ func main() {
 		LoopPeriod:    v.GetDuration("loop.period"),
 	}
 
-	client := common.NewClient(clientConfig)
+	signalChannel := handleSignal()
+	client := common.NewClient(clientConfig, signalChannel)
 	client.StartClientLoop()
 }
