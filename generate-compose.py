@@ -9,8 +9,9 @@ COMPOSE_CONTENT_TEMPLATE = {
             "container_name": "server",
             "image": "server:latest",
             "entrypoint": "python3 /main.py",
-            "environment": ["PYTHONUNBUFFERED=1", "LOGGING_LEVEL=DEBUG"],
+            "environment": ["PYTHONUNBUFFERED=1"],
             "networks": ["bet_network"],
+            "volumes": ["./server/config.ini:/config.ini:ro"],
         }
     },
     "networks": {
@@ -26,9 +27,9 @@ COMPOSE_CONTENT_TEMPLATE = {
 CLIENT_TEMPLATE = {
     "image": "client:latest",
     "entrypoint": "/client",
-    "environment": ["CLI_LOG_LEVEL=DEBUG"],
     "networks": ["bet_network"],
     "depends_on": ["server"],
+    "volumes": ["./client/config.yaml:/config.yaml:ro"],
 }
 
 
@@ -39,7 +40,7 @@ def generate_compose_file(file_name: str, client_count: int) -> None:
         service_name = f"client{i}"
         client_content = copy.deepcopy(CLIENT_TEMPLATE)
         client_content["container_name"] = service_name
-        client_content["environment"].append(f"CLI_ID={i}")
+        client_content["environment"] = [f"CLI_ID={i}"]
         compose_content["services"][service_name] = client_content
 
     with open(file_name, "w") as file:
