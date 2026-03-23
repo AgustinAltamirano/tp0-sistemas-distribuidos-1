@@ -18,7 +18,7 @@ COMPOSE_CONTENT_TEMPLATE = {
         "bet_network": {
             "ipam": {
                 "driver": "default",
-                "config": [{"subnet": "172.25.125.0/24"}],
+                "config": [{"subnet": "172.25.126.0/24"}],
             }
         }
     },
