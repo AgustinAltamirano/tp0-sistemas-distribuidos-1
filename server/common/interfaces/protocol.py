@@ -27,6 +27,8 @@ class Protocol(ABC):
         pass
 
     @abstractmethod
-    def send_confirm_bet_batch(self, agency_id: int, bet_amount: int, result_code: ResultCode) -> None:
+    def send_confirm_bet_batch(
+        self, agency_id: int, bet_amount: int, result_code: ResultCode
+    ) -> None:
         """Send a confirm bet batch message to the client."""
         pass

@@ -7,14 +7,7 @@ import (
 	"errors"
 )
 
-const (
-	// messageCode(2 bytes) + agencyId(2 bytes) + betAmount(4 bytes) + betBatchSize(4 bytes) = 12 bytes
-	REGISTER_BET_BATCH_BASE_SIZE = 12
-
-	// document(4 bytes) + birthdate(10 bytes) + number(4 bytes)
-	// + firstNameLength(2 bytes) + lastNameLength(2 bytes) = 22 bytes
-	BET_BASE_SIZE = 22
-)
+const MAX_BET_BATCH_SIZE = 8 * 1024
 
 type protocol struct {
 	socket         socket.SafeSocket
@@ -48,15 +41,19 @@ func (p *protocol) SendMessage(message Message) error {
 
 func (p *protocol) SendRegisterBetBatchMessage(betBatch bet.BetBatch) error {
 	if len(betBatch.Bets) > int(^uint32(0)) {
-		return errors.New("betAmount exceeds uint32 capacity")
+		return errors.New("betAmount exceeds maximum capacity")
 	}
 
-	betBatchSize, err := p.getBetBatchSize(betBatch)
+	betBatchSize, err := GetBetBatchSize(betBatch)
 	if err != nil {
 		return err
 	}
 
-	buffer := make([]byte, REGISTER_BET_BATCH_BASE_SIZE+betBatchSize)
+	if betBatchSize > MAX_BET_BATCH_SIZE {
+		return errors.New("betBatch exceeds max size")
+	}
+
+	buffer := make([]byte, BET_BATCH_BASE_SIZE+betBatchSize)
 	p.serializeBetBatchHeader(betBatch, betBatchSize, buffer)
 	p.serializeBetBatch(betBatch, buffer)
 
@@ -64,29 +61,15 @@ func (p *protocol) SendRegisterBetBatchMessage(betBatch bet.BetBatch) error {
 	return err
 }
 
-func (p *protocol) getBetBatchSize(betBatch bet.BetBatch) (uint32, error) {
-	var betBatchSize uint32 = 0
-	for _, currentBet := range betBatch.Bets {
-		if len(currentBet.FirstName) > int(^uint16(0)) {
-			return 0, errors.New("firstName exceeds uint16 length capacity")
-		}
-		if len(currentBet.LastName) > int(^uint16(0)) {
-			return 0, errors.New("lastName exceeds uint16 length capacity")
-		}
-		betBatchSize += BET_BASE_SIZE + uint32(len(currentBet.FirstName)) + uint32(len(currentBet.LastName))
-	}
-	return betBatchSize, nil
-}
-
-func (p *protocol) serializeBetBatchHeader(betBatch bet.BetBatch, betBatchSize uint32, buffer []byte) {
+func (p *protocol) serializeBetBatchHeader(betBatch bet.BetBatch, betBatchSize int, buffer []byte) {
 	binary.BigEndian.PutUint16(buffer[0:], uint16(REGISTER_BET_BATCH))
 	binary.BigEndian.PutUint16(buffer[2:], betBatch.AgencyId)
 	binary.BigEndian.PutUint32(buffer[4:], uint32(len(betBatch.Bets)))
-	binary.BigEndian.PutUint32(buffer[8:], betBatchSize)
+	binary.BigEndian.PutUint32(buffer[8:], uint32(betBatchSize))
 }
 
 func (p *protocol) serializeBetBatch(betBatch bet.BetBatch, buffer []byte) {
-	offset := REGISTER_BET_BATCH_BASE_SIZE
+	offset := BET_BATCH_BASE_SIZE
 	for _, currentBet := range betBatch.Bets {
 		offset = p.serializeBet(currentBet, buffer, offset)
 	}

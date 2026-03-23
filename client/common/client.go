@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -19,13 +20,9 @@ const (
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
-	ID            string
-	ServerAddress string
-	BetFirstname  string
-	BetLastname   string
-	BetDocument   uint32
-	BetBirthdate  string
-	BetNumber     uint32
+	ID             string
+	ServerAddress  string
+	BatchMaxAmount uint32
 }
 
 // Client Entity that encapsulates how
@@ -95,14 +92,9 @@ func (c *Client) StartClientLoop() {
 	}
 
 	runFinished := make(chan error, 1)
+	datasetPath := fmt.Sprintf("/data/agency-%s.csv", c.config.ID)
 	go func() {
-		runFinished <- agency.Run(
-			c.config.BetFirstname,
-			c.config.BetLastname,
-			c.config.BetDocument,
-			c.config.BetBirthdate,
-			c.config.BetNumber,
-		)
+		runFinished <- agency.Run(datasetPath, c.config.BatchMaxAmount)
 	}()
 
 	select {

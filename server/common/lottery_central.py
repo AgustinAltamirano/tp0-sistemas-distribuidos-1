@@ -12,18 +12,29 @@ class LotteryCentral:
         self._protocol = LotteryCentralProtocol(safe_socket)
 
     def start(self):
-        message = self._protocol.receive_message()
-        message.send_to_lottery_central(self)
+        while True:
+            try:
+                message = self._protocol.receive_message()
+                message.send_to_lottery_central(self)
+            except ConnectionError:
+                break
 
     def register_bet_batch(self, bet_batch: BetBatch):
-        for bet in bet_batch.bets:
+        result_code = ResultCode.SUCCESS
+        try:
+            utils.store_bets(bet_batch.bets)
             logging.info(
-                f"action: apuesta_almacenada | result: success | dni: {bet.document}"
+                f"action: apuesta_recibida | result: success | cantidad: {len(bet_batch.bets)}"
             )
-        utils.store_bets(bet_batch.bets)
+        except Exception:
+            result_code = ResultCode.ERROR
+            logging.info(
+                f"action: apuesta_recibida | result: fail | cantidad: {len(bet_batch.bets)}"
+            )
+
         confirmation_message = ConfirmBetBatch(
             agency_id=bet_batch.agency_id,
             bet_amount=len(bet_batch.bets),
-            result_code=ResultCode.SUCCESS,
+            result_code=result_code,
         )
         self._protocol.send_message(confirmation_message)

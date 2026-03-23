@@ -3,6 +3,7 @@ package common
 import (
 	"client/client/common/bet"
 	"client/client/common/socket"
+	"fmt"
 )
 
 type agency struct {
@@ -18,43 +19,42 @@ func NewLotteryAgency(id uint16, safeSocket socket.SafeSocket) (LotteryAgency, e
 	return &agency{id: id, protocol: protocol}, nil
 }
 
-func (a *agency) Run(
-	participantFirstName string,
-	participantLastName string,
-	participantDocument uint32,
-	participantBirthdate string,
-	betNumber uint32,
-) error {
-	newBet := bet.Bet{
-		AgencyId:  a.id,
-		FirstName: participantFirstName,
-		LastName:  participantLastName,
-		Document:  participantDocument,
-		Birthdate: participantBirthdate,
-		Number:    betNumber,
-	}
-	bets := []bet.Bet{newBet}
-	betBatch := bet.BetBatch{AgencyId: a.id, Bets: bets}
-	registerBetBatchMessage := NewRegisterBetBatch(betBatch)
-
-	if err := a.protocol.SendMessage(registerBetBatchMessage); err != nil {
-		return err
-	}
-	log.Infof("action: apuesta_enviada | result: success | dni: %d", participantDocument)
-	message, err := a.protocol.ReceiveMessage()
+func (a *agency) Run(datasetPath string, batchMaxAmount uint32) error {
+	betReader, err := NewBetCSVReader(datasetPath, a.id)
 	if err != nil {
 		return err
 	}
-	return message.SendToAgency(a)
+	defer betReader.Close()
+
+	builder := NewBatchBuilder(batchMaxAmount, MAX_BET_BATCH_SIZE, a.id)
+
+	return builder.BuildFromReader(betReader, func(betBatch bet.BetBatch) error {
+		registerBetBatchMessage := NewRegisterBetBatch(betBatch)
+
+		if err := a.protocol.SendMessage(registerBetBatchMessage); err != nil {
+			return err
+		}
+
+		message, err := a.protocol.ReceiveMessage()
+		if err != nil {
+			return err
+		}
+
+		if err := message.SendToAgency(a); err != nil {
+			return err
+		}
+
+		log.Infof("action: apuesta_enviada | result: success | cantidad: %d", len(betBatch.Bets))
+		return nil
+	})
 }
 
 func (a *agency) ConfirmBetBatch(agencyId uint16, betAmount uint32, resultCode ResultCode) error {
-	resultString := ""
 	if resultCode == SUCCESS {
-		resultString = "success"
-	} else {
-		resultString = "fail"
+		log.Infof("action: confirmar_apuesta | result: success | cantidad: %d", betAmount)
+		return nil
 	}
-	log.Infof("action: confirmar_apuesta | result: %s", resultString)
-	return nil
+
+	log.Infof("action: confirmar_apuesta | result: fail | cantidad: %d", betAmount)
+	return fmt.Errorf("bet batch rejected by lottery central | agency_id: %d", agencyId)
 }

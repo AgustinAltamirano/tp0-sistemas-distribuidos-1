@@ -32,7 +32,6 @@ CLIENT_TEMPLATE = {
     "entrypoint": "/client",
     "networks": ["bet_network"],
     "depends_on": ["server"],
-    "env_file": ["./client/.env"],
     "volumes": ["./client/config.yaml:/config.yaml:ro"],
 }
 
@@ -45,6 +44,9 @@ def generate_compose_file(file_name: str, client_count: int) -> None:
         client_content = copy.deepcopy(CLIENT_TEMPLATE)
         client_content["container_name"] = service_name
         client_content["environment"] = [f"CLI_ID={i}"]
+        client_content["volumes"].append(
+            f"./.data/agency-{i}.csv:/data/agency-{i}.csv:ro"
+        )
         compose_content["services"][service_name] = client_content
 
     with open(file_name, "w") as file:

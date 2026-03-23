@@ -11,8 +11,6 @@ services:
     depends_on:
     - server
     entrypoint: /client
-    env_file:
-    - ./client/.env
     environment:
     - CLI_ID=1
     image: client:latest
@@ -20,6 +18,7 @@ services:
     - bet_network
     volumes:
     - ./client/config.yaml:/config.yaml:ro
+    - ./.data/agency-1.csv:/data/agency-1.csv:ro
   server:
     container_name: server
     entrypoint: python3 /main.py

@@ -1,5 +1,6 @@
 import csv
 import datetime
+import os
 
 """ Bets storage location. """
 STORAGE_FILEPATH = "/bets.csv"
