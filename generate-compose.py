@@ -11,7 +11,7 @@ COMPOSE_CONTENT_TEMPLATE = {
             "entrypoint": "python3 /main.py",
             "environment": ["PYTHONUNBUFFERED=1"],
             "networks": ["bet_network"],
-            "volumes": ["./server/config.ini:/config.ini"],
+            "volumes": ["./server/config.ini:/config.ini:ro"],
         }
     },
     "networks": {
@@ -29,7 +29,7 @@ CLIENT_TEMPLATE = {
     "entrypoint": "/client",
     "networks": ["bet_network"],
     "depends_on": ["server"],
-    "volumes": ["./client/config.yaml:/config.yaml"],
+    "volumes": ["./client/config.yaml:/config.yaml:ro"],
 }
 
 
