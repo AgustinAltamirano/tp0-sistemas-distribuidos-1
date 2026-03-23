@@ -80,6 +80,14 @@ func PrintConfig(v *viper.Viper) {
 		v.GetString("log.level"),
 		v.GetUint32("batch.maxAmount"),
 	)
+
+	log.Infof("action: config | result: success | bet_firstname: %s | bet_lastname: %s | bet_document: %d | bet_birthdate: %s | bet_number: %d",
+		v.GetString("bet.firstname"),
+		v.GetString("bet.lastname"),
+		v.GetUint32("bet.document"),
+		v.GetString("bet.birthdate"),
+		v.GetUint32("bet.number"),
+	)
 }
 
 func handleSignal() chan os.Signal {

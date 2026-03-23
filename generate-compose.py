@@ -32,6 +32,7 @@ CLIENT_TEMPLATE = {
     "entrypoint": "/client",
     "networks": ["bet_network"],
     "depends_on": ["server"],
+    "env_file": ["./client/.env"],
     "volumes": ["./client/config.yaml:/config.yaml:ro"],
 }
 
