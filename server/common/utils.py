@@ -48,6 +48,7 @@ Not thread-safe/process-safe.
 
 
 def store_bets(bets: list[Bet]) -> None:
+    os.makedirs(os.path.dirname(STORAGE_FILEPATH), exist_ok=True)
     with open(STORAGE_FILEPATH, "a+") as file:
         writer = csv.writer(file, quoting=csv.QUOTE_MINIMAL)
         for bet in bets:
