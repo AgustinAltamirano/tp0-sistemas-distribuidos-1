@@ -1,0 +1,9 @@
+name: tp0-validator
+services:
+  validator:
+    container_name: validator
+    image: busybox:latest
+    network_mode: "container:server"
+    entrypoint: ["sh", "/run.sh"]
+    volumes:
+      - ./validator/run.sh:/run.sh:ro

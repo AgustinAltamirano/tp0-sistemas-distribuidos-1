@@ -1,34 +1,30 @@
 name: tp0
+networks:
+  bet_network:
+    ipam:
+      config:
+      - subnet: 172.25.126.0/24
+      driver: default
 services:
   server:
     container_name: server
-    image: server:latest
     entrypoint: python3 /main.py
     environment:
-      - PYTHONUNBUFFERED=1
-      - LOGGING_LEVEL=DEBUG
+    - PYTHONUNBUFFERED=1
+    image: server:latest
     networks:
-      - bet_network
+    - bet_network
     volumes:
       - ./server/config.ini:/config.ini:ro
-
   client1:
     container_name: client1
     image: client:latest
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - CLI_LOG_LEVEL=DEBUG
     networks:
       - bet_network
     depends_on:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml:ro
-
-networks:
-  bet_network:
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.25.125.0/24
