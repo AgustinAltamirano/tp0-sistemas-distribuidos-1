@@ -1,4 +1,4 @@
-module github.com/7574-sistemas-distribuidos/docker-compose-init
+module client
 
 go 1.17
 

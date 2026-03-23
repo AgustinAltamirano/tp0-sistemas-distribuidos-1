@@ -11,6 +11,8 @@ services:
     depends_on:
     - server
     entrypoint: /client
+    env_file:
+    - ./client/.env
     environment:
     - CLI_ID=1
     image: client:latest
@@ -28,3 +30,4 @@ services:
     - bet_network
     volumes:
     - ./server/config.ini:/config.ini:ro
+    - ./.data_server/bets.csv:/bets.csv
