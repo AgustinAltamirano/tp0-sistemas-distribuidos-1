@@ -60,3 +60,35 @@ prueba utilizando `netcat`.
 Una aclaración: en `run.sh` se definen las variables `SERVER_HOST` y `SERVER_PORT` para especificar la dirección y el
 puerto del servidor al que se desea conectar. Estas variables se pueden modificar según sea necesario para apuntar al
 servidor correcto.
+
+## Ejercicio 4
+
+En este ejercicio se implementa el manejo de la señal `SIGTERM` tanto en el cliente como en el servidor, permitiendo un
+_graceful shutdown_ de ambos procesos, cerrando todos sus recursos (sus sockets).
+
+### Cliente
+
+En `main.go`, la función `handleSignal()` crea un channel de señales y registra la notificación de `SIGTERM` mediante
+`signal.Notify`. Este channel se pasa al cliente en su constructor.
+
+En `client.go`, dentro de `StartClientLoop()`, en cada iteración del loop se utiliza un `select` con dos cases:
+
+- El channel de señales: si se recibe una señal `SIGTERM`, se loguea el evento y se retorna inmediatamente, finalizando
+  el loop.
+- El case `default`: ejecuta el envío y recepción normal de mensajes.
+
+Además, el método `closeClientSocket()` se encarga de cerrar la conexión TCP de forma segura.
+
+### Servidor
+
+En `main.py`, se registra un handler para `SIGTERM` usando la librería `signal`. Cuando se recibe la señal, se invoca a
+la función handler de la señal, que llama a `server.request_shutdown()`. Este método simplemente setea el flag
+`_stop_requested = True`.
+
+En `server.py`, el loop principal verifica en cada iteración si `_stop_requested` es `True` para salir del
+bucle. El socket del servidor tiene un timeout de 0.2 segundos, lo que evita que `accept()` bloquee
+indefinidamente y permite que el servidor chequee periódicamente si se solicitó el shutdown. Cuando el loop termina, el
+context manager (`__exit__`) llama a `close()`, que cierra el socket del servidor de forma ordenada.
+
+En ambos casos, se eligió por un cierre _polite_ de los procesos. Al recibir la señal, tanto cliente como servidor
+esperan a que finalice el ciclo actual del echo antes de cerrar los sockets.
