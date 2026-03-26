@@ -38,6 +38,9 @@ CLIENT_TEMPLATE = {
 
 def generate_compose_file(file_name: str, client_count: int) -> None:
     compose_content = copy.deepcopy(COMPOSE_CONTENT_TEMPLATE)
+    compose_content["services"]["server"]["environment"].append(
+        f"SERVER_AGENCIES_AMOUNT={client_count}"
+    )
 
     for i in range(1, client_count + 1):
         service_name = f"client{i}"

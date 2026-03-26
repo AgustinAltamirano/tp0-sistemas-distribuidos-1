@@ -1,6 +1,7 @@
 import csv
 import datetime
 import os
+from typing import Generator
 
 """ Bets storage location. """
 STORAGE_FILEPATH = "/bets.csv"
@@ -70,7 +71,7 @@ Not thread-safe/process-safe.
 """
 
 
-def load_bets() -> list[Bet]:
+def load_bets() -> Generator[Bet, None, None]:
     with open(STORAGE_FILEPATH, "r") as file:
         reader = csv.reader(file, quoting=csv.QUOTE_MINIMAL)
         for row in reader:

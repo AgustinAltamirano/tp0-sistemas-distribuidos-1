@@ -28,7 +28,7 @@ func (a *agency) Run(datasetPath string, batchMaxAmount uint32) error {
 
 	builder := NewBatchBuilder(batchMaxAmount, MAX_BET_BATCH_SIZE, a.id)
 
-	return builder.BuildFromReader(betReader, func(betBatch bet.BetBatch) error {
+	if err := builder.BuildFromReader(betReader, func(betBatch bet.BetBatch) error {
 		registerBetBatchMessage := NewRegisterBetBatch(betBatch)
 
 		if err := a.protocol.SendMessage(registerBetBatchMessage); err != nil {
@@ -46,7 +46,24 @@ func (a *agency) Run(datasetPath string, batchMaxAmount uint32) error {
 
 		log.Infof("action: apuesta_enviada | result: success | cantidad: %d", len(betBatch.Bets))
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	if err := a.protocol.SendMessage(NewFinalizeBets(a.id)); err != nil {
+		return err
+	}
+
+	if err := a.protocol.SendMessage(NewAskWinnersList(a.id)); err != nil {
+		return err
+	}
+
+	response, err := a.protocol.ReceiveMessage()
+	if err != nil {
+		return err
+	}
+
+	return response.SendToAgency(a)
 }
 
 func (a *agency) ConfirmBetBatch(agencyId uint16, betAmount uint32, resultCode ResultCode) error {
@@ -57,4 +74,9 @@ func (a *agency) ConfirmBetBatch(agencyId uint16, betAmount uint32, resultCode R
 
 	log.Infof("action: confirmar_apuesta | result: fail | cantidad: %d", betAmount)
 	return fmt.Errorf("bet batch rejected by lottery central | agency_id: %d", agencyId)
+}
+
+func (a *agency) HandleWinnersList(agencyId uint16, winners []uint32) error {
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", len(winners))
+	return nil
 }

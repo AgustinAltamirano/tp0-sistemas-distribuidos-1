@@ -32,3 +32,18 @@ class Protocol(ABC):
     ) -> None:
         """Send a confirm bet batch message to the client."""
         pass
+
+    @abstractmethod
+    def receive_finalize_bets(self) -> int:
+        """Read agency_id (uint16) after message code has been consumed."""
+        pass
+
+    @abstractmethod
+    def receive_ask_winners_list(self) -> int:
+        """Read agency_id (uint16) after message code has been consumed."""
+        pass
+
+    @abstractmethod
+    def send_give_winners_list(self, agency_id: int, winners: list) -> None:
+        """Send GIVE_WINNERS_LIST message to the client."""
+        pass

@@ -15,6 +15,9 @@ REGISTER_BET_BATCH_BASE_SIZE = 12
 # + firstNameLength(2 bytes) + lastNameLength(2 bytes) = 22 bytes
 BET_BASE_SIZE = 22
 
+# messageCode(2 bytes) + agencyId(2 bytes) + winnersAmount(4 bytes) = 8 bytes
+WINNERS_LIST_BASE_SIZE = 8
+
 NETWORK_ENDIANNESS = "big"
 
 
@@ -51,6 +54,25 @@ class LotteryCentralProtocol(Protocol):
         buf[4:8] = bet_amount.to_bytes(4, byteorder=NETWORK_ENDIANNESS)
         buf[8] = result_code.value
         self._socket.write(bytes(buf))
+
+    def receive_finalize_bets(self) -> int:
+        return self._receive_int(2)
+
+    def receive_ask_winners_list(self) -> int:
+        return self._receive_int(2)
+
+    def send_give_winners_list(self, agency_id: int, winners: list) -> None:
+        winners_amount = len(winners)
+        buffer = bytearray(WINNERS_LIST_BASE_SIZE + winners_amount * 4)
+        buffer[0:2] = MessageCode.GIVE_WINNERS_LIST.value.to_bytes(
+            2, byteorder=NETWORK_ENDIANNESS
+        )
+        buffer[2:4] = agency_id.to_bytes(2, byteorder=NETWORK_ENDIANNESS)
+        buffer[4:8] = winners_amount.to_bytes(4, byteorder=NETWORK_ENDIANNESS)
+        for i, doc in enumerate(winners):
+            offset = WINNERS_LIST_BASE_SIZE + i * 4
+            buffer[offset : offset + 4] = doc.to_bytes(4, byteorder=NETWORK_ENDIANNESS)
+        self._socket.write(bytes(buffer))
 
     def _receive_message_code(self) -> MessageCode:
         message_code_value = self._receive_int(2)

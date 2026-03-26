@@ -111,3 +111,40 @@ func (p *protocol) ReceiveConfirmBetBatch() (uint16, uint32, ResultCode, error) 
 	resultCode := ResultCode(buf[6])
 	return agencyId, betAmount, resultCode, nil
 }
+
+func (p *protocol) SendFinalizeBetsMessage(agencyId uint16) error {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint16(buf[0:], uint16(FINALIZE_BETS))
+	binary.BigEndian.PutUint16(buf[2:], agencyId)
+	_, err := p.socket.Write(buf)
+	return err
+}
+
+func (p *protocol) SendAskWinnersListMessage(agencyId uint16) error {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint16(buf[0:], uint16(ASK_WINNERS_LIST))
+	binary.BigEndian.PutUint16(buf[2:], agencyId)
+	_, err := p.socket.Write(buf)
+	return err
+}
+
+func (p *protocol) ReceiveGiveWinnersList() (uint16, []uint32, error) {
+	header, err := p.socket.Read(6)
+	if err != nil {
+		return 0, nil, err
+	}
+	agencyId := binary.BigEndian.Uint16(header[0:2])
+	n := binary.BigEndian.Uint32(header[2:6])
+
+	winners := make([]uint32, n)
+	if n > 0 {
+		body, err := p.socket.Read(int(n) * 4)
+		if err != nil {
+			return 0, nil, err
+		}
+		for i := uint32(0); i < n; i++ {
+			winners[i] = binary.BigEndian.Uint32(body[i*4 : i*4+4])
+		}
+	}
+	return agencyId, winners, nil
+}
