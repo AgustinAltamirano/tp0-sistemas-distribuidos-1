@@ -36,3 +36,27 @@ services:
 Como observación, el sufijo `:ro` indica que el volumen es de solo lectura, lo que significa que el contenedor no podrá modificar los archivos montados.
 
 Adicionalmente, se actualizó el script `generate-compose.py` para incluir estos volúmenes.
+
+## Ejercicio 3
+
+En este ejercicio se implementa un validador del servidor mediante el script `validar-echo-server.sh`. El mismo envía
+un mensaje de prueba al echo server y verifica que la respuesta sea correcta. Para ejecutar el validador, se puede usar
+el siguiente comando:
+
+```bash
+./validar-echo-server.sh
+```
+
+Como es imposible garantizar que la computadora host tenga instalado `netcat` (o mismo que posea un sistema operativo
+UNIX), se implementó el validador dentro de un container de Docker, levantado mediante docker compose desde el script.
+Además, para que el validador pueda comunicarse con el servidor sin que este último tenga que exponer un puerto, ambos
+contenedores deben compartir la misma red. Esto se logra utilizando la opción `network_mode: "container:server"` en la definición del servicio del validador, lo que permite que el validador utilice la misma red local del contenedor del
+servidor.
+
+Para ello, se utiliza el archivo `docker-compose-validator.yml`, el cual define un servicio llamado `validator` que a
+su vez ejecuta otro script llamado `run.sh`. Dentro de este script, se realiza el envío y recepción del mensaje de
+prueba utilizando `netcat`.
+
+Una aclaración: en `run.sh` se definen las variables `SERVER_HOST` y `SERVER_PORT` para especificar la dirección y el
+puerto del servidor al que se desea conectar. Estas variables se pueden modificar según sea necesario para apuntar al
+servidor correcto.
